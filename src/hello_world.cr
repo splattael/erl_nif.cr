@@ -4,7 +4,20 @@ fun nif_init : ErlNif::EntryT*
   GC.init
   LibCrystalMain.__crystal_main(0, Pointer(Pointer(UInt8)).null)
 
-  funcs = [] of ErlNif::Niffunc
+  from_crystal = ->(env : ErlNif::Nifenv, argc : LibC::Int, argv : ErlNif::NifTerm*) {
+    string = "Hi from Crystal #{Crystal::VERSION}"
+    ErlNif.make_string(env, string, ErlNif::Nifcharencoding::NifLatin1)
+  }
+
+  hello_func = ErlNif::FuncT.new(
+    name: "from_crystal",
+    arity: 0,
+    fptr: from_crystal
+  )
+
+  funcs = [
+    hello_func
+  ]
 
   load = ->(env : ErlNif::Nifenv, priv : Void**, load_info : ErlNif::NifTerm) {
     p "LOAD"
@@ -29,9 +42,8 @@ fun nif_init : ErlNif::EntryT*
     major: ErlNif::NIF_MAJOR_VERSION,
     minor: ErlNif::NIF_MINOR_VERSION,
     name: "Elixir.HelloWorld",
-    num_of_funcs: 0,
+    num_of_funcs: funcs.size,
     funcs: funcs,
-    load: load,
     reload: reload,
     upgrade: upgrade,
     unload: unload,
