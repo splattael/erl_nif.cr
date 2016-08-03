@@ -1,6 +1,6 @@
 # Erlang NIF in Crystal
 
-:warning: :construnction: :warning:
+:warning: :construction: :warning:
 
 ## Usage
 
