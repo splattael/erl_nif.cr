@@ -5,6 +5,6 @@
 ## Usage
 
     $ make
-    Segmentation fault
+    iex(1)> # silence
 
 kthxbye
