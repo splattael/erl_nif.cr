@@ -5,7 +5,7 @@ fun nif_init : ErlNif::EntryT*
   LibCrystalMain.__crystal_main(0, Pointer(Pointer(UInt8)).null)
 
   from_crystal = ->(env : ErlNif::Nifenv, argc : LibC::Int, argv : ErlNif::NifTerm*) {
-    string = "Hi from Crystal #{Crystal::VERSION}"
+    string = "Hi from Crystal"
     ErlNif.make_string(env, string, ErlNif::Nifcharencoding::NifLatin1)
   }
 
