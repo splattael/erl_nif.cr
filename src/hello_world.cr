@@ -9,14 +9,25 @@ fun nif_init : ErlNif::EntryT*
     ErlNif.make_string(env, string, ErlNif::Nifcharencoding::NifLatin1)
   }
 
+  echo_crystal = ->(env : ErlNif::Nifenv, argc : LibC::Int, argv : ErlNif::NifTerm*) {
+    argv[0]
+  }
+
   hello_func = ErlNif::FuncT.new(
     name: "from_crystal",
     arity: 0,
     fptr: from_crystal
   )
 
+  echo_func = ErlNif::FuncT.new(
+    name: "echo",
+    arity: 1,
+    fptr: echo_crystal
+  )
+
   funcs = [
-    hello_func
+    hello_func,
+    echo_func
   ]
 
   load = ->(env : ErlNif::Nifenv, priv : Void**, load_info : ErlNif::NifTerm) {

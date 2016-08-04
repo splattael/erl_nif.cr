@@ -7,4 +7,8 @@ defmodule HelloWorld do
 
   def from_crystal do
   end
+
+  def echo(x) do
+    :error
+  end
 end
