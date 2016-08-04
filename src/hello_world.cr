@@ -1,29 +1,38 @@
 require "./erl_nif"
 
+def func(name, arity, &block : ErlNif::Nifenv, LibC::Int, ErlNif::NifTerm* -> ErlNif::NifTerm)
+  ErlNif::FuncT.new(
+    name: name,
+    arity: arity,
+    fptr: block
+  )
+end
+
 fun nif_init : ErlNif::EntryT*
   GC.init
   LibCrystalMain.__crystal_main(0, Pointer(Pointer(UInt8)).null)
 
-  from_crystal = ->(env : ErlNif::Nifenv, argc : LibC::Int, argv : ErlNif::NifTerm*) {
+  # TODO cannot remove this call?? -> segfault
+  ErlNif::FuncT.new(
+    name: "dummy",
+    arity: 0,
+    fptr: ->(env : ErlNif::Nifenv, argc : LibC::Int, argv : ErlNif::NifTerm*) {
+      argv[0]
+    }
+  )
+
+  hello_func = func("from_crystal", 0) do |env, argc, argv|
     string = "Hi from Crystal"
     ErlNif.make_string(env, string, ErlNif::Nifcharencoding::NifLatin1)
-  }
+  end
 
-  echo_crystal = ->(env : ErlNif::Nifenv, argc : LibC::Int, argv : ErlNif::NifTerm*) {
+  echo_func = func("echo", 1) do |env, argc, argv|
+    argv[0]
+  end
+
+  dummy = ->(env : ErlNif::Nifenv, argc : LibC::Int, argv : ErlNif::NifTerm*) {
     argv[0]
   }
-
-  hello_func = ErlNif::FuncT.new(
-    name: "from_crystal",
-    arity: 0,
-    fptr: from_crystal
-  )
-
-  echo_func = ErlNif::FuncT.new(
-    name: "echo",
-    arity: 1,
-    fptr: echo_crystal
-  )
 
   funcs = [
     hello_func,
