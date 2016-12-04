@@ -1,52 +1,49 @@
-require "./erl_nif"
+require "./lib_erl_nif"
 
-def func(name, arity, &block : ErlNif::Nifenv, LibC::Int, ErlNif::NifTerm* -> ErlNif::NifTerm)
-  ErlNif::FuncT.new(
+def func(name, arity, &block : LibErlNif::Nifenv, LibC::Int, LibErlNif::Term* -> LibErlNif::Term)
+  LibErlNif::FuncT.new(
     name: name,
     arity: arity,
     fptr: block
   )
 end
 
-fun nif_init : ErlNif::EntryT*
+fun nif_init : LibErlNif::EntryT*
   GC.init
-  LibCrystalMain.__crystal_main(0, Pointer(Pointer(UInt8)).null)
-
-  # TODO cannot remove this call?? -> segfault
-  ErlNif::FuncT.new(
-    name: "dummy",
-    arity: 0,
-    fptr: ->(env : ErlNif::Nifenv, argc : LibC::Int, argv : ErlNif::NifTerm*) {
-      argv[0]
-    }
-  )
+  # TODO segfaults after this call?
+  # LibCrystalMain.__crystal_main(0, nil)
 
   hello_func = func("from_crystal", 0) do |env, argc, argv|
     string = "Hi from Crystal"
-    ErlNif.make_string(env, string, ErlNif::Nifcharencoding::NifLatin1)
+    LibErlNif.make_string(env, string, LibErlNif::Nifcharencoding::Latin1)
   end
 
-  echo_func = func("echo", 1) do |env, argc, argv|
-    argv[0]
-  end
-
-  dummy = ->(env : ErlNif::Nifenv, argc : LibC::Int, argv : ErlNif::NifTerm*) {
-    argv[0]
-  }
+   echo_func = func("echo", 1) do |env, argc, argv|
+     argv[0]
+   end
 
   funcs = [
     hello_func,
     echo_func
   ]
 
-  entry = ErlNif::EntryT.new(
-    major: ErlNif::NIF_MAJOR_VERSION,
-    minor: ErlNif::NIF_MINOR_VERSION,
+  load = ->(env : LibErlNif::Nifenv, priv_data : Void**, load_info : LibErlNif::Term) { 0 }
+  reload = ->(env : LibErlNif::Nifenv, priv_data : Void**, load_info : LibErlNif::Term) { 0 }
+  upgrade = ->(env : LibErlNif::Nifenv, priv_data : Void**, old_priv_data : Void**, load_info : LibErlNif::Term) { 0 }
+  unload = ->(env : LibErlNif::Nifenv, priv_data : Void*) {}
+
+  entry = LibErlNif::EntryT.new(
+    major: LibErlNif::MAJOR_VERSION,
+    minor: LibErlNif::MINOR_VERSION,
     name: "Elixir.HelloWorld",
     num_of_funcs: funcs.size,
     funcs: funcs,
+    load: load,
+    reload: reload,
+    upgrade: upgrade,
+    unload: unload,
     vm_variant: "beam.vanilla",
-    options: ErlNif::NIF_DIRTY_NIF_OPTION
+    options: LibErlNif::DIRTY_NIF_OPTION
   )
 
   pointerof(entry)
