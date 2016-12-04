@@ -28,7 +28,7 @@ lib LibErlNif
     minor : LibC::Int
     name : LibC::Char*
     num_of_funcs : LibC::Int
-    funcs : Niffunc*
+    funcs : FuncT*
     load : (Nifenv, Void**, Term -> LibC::Int)
     reload : (Nifenv, Void**, Term -> LibC::Int)
     upgrade : (Nifenv, Void**, Void**, Term -> LibC::Int)

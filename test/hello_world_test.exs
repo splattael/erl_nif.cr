@@ -11,4 +11,17 @@ defmodule HelloWorldTest do
     assert HelloWorld.echo("binary") == "binary"
     assert HelloWorld.echo('list') == 'list'
   end
+
+  test "upcase" do
+    assert_raise ArgumentError, fn ->
+      HelloWorld.upcase(23)
+    end
+
+    assert HelloWorld.upcase("") == ""
+    assert HelloWorld.upcase("a") == "A"
+    assert HelloWorld.upcase("b") == "B"
+    assert HelloWorld.upcase("ab") == "AB"
+    assert HelloWorld.upcase("hello world") == "HELLO WORLD"
+    assert HelloWorld.upcase("josé") == "JOSÉ"
+  end
 end

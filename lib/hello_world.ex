@@ -11,4 +11,8 @@ defmodule HelloWorld do
   def echo(_x) do
     :error
   end
+
+  def upcase(string) do
+    :error
+  end
 end

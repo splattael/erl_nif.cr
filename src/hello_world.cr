@@ -18,13 +18,28 @@ fun nif_init : LibErlNif::EntryT*
     LibErlNif.make_string(env, string, LibErlNif::Nifcharencoding::Latin1)
   end
 
-   echo_func = func("echo", 1) do |env, argc, argv|
-     argv[0]
-   end
+  echo_func = func("echo", 1) do |env, argc, argv|
+    argv[0]
+  end
+
+  upcase_func = func("upcase", 1) do |env, argc, argv|
+    input = LibErlNif::Nifbinary.new
+    if LibErlNif.inspect_iolist_as_binary(env, argv[0], pointerof(input)) == 0
+      LibErlNif.make_badarg(env)
+    else
+      string = String.new(input.data.to_slice(input.size))
+      output = string.upcase
+      term = LibErlNif::Term.new(0)
+      bin = LibErlNif.make_new_binary(env, output.bytesize, pointerof(term))
+      bin.to_slice(output.bytesize).copy_from(output.to_slice)
+      term
+    end
+  end
 
   funcs = [
     hello_func,
-    echo_func
+    echo_func,
+    upcase_func,
   ]
 
   load = ->(env : LibErlNif::Nifenv, priv_data : Void**, load_info : LibErlNif::Term) { 0 }
