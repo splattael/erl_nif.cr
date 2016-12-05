@@ -1,28 +1,64 @@
 require "./lib_erl_nif"
 
-def func(name, arity, &block : LibErlNif::Nifenv, LibC::Int, LibErlNif::Term* -> LibErlNif::Term)
-  LibErlNif::FuncT.new(
-    name: name,
-    arity: arity,
-    fptr: block
-  )
+module ErlNif
+  def func(name, arity, &block : LibErlNif::Nifenv, LibC::Int, LibErlNif::Term* -> LibErlNif::Term)
+    @@funcs << LibErlNif::FuncT.new(
+      name: name,
+      arity: arity,
+      fptr: block
+    )
+  end
+
+  def nif_init : LibErlNif::EntryT*
+    funcs = @@funcs
+
+    GC.init
+    # TODO segfaults after this call?
+    # LibCrystalMain.__crystal_main(0, nil)
+
+    load = ->(env : LibErlNif::Nifenv, priv_data : Void**, load_info : LibErlNif::Term) { 0 }
+    reload = ->(env : LibErlNif::Nifenv, priv_data : Void**, load_info : LibErlNif::Term) { 0 }
+    upgrade = ->(env : LibErlNif::Nifenv, priv_data : Void**, old_priv_data : Void**, load_info : LibErlNif::Term) { 0 }
+    unload = ->(env : LibErlNif::Nifenv, priv_data : Void*) {}
+
+    entry = LibErlNif::EntryT.new(
+      major: LibErlNif::MAJOR_VERSION,
+      minor: LibErlNif::MINOR_VERSION,
+      name: "Elixir.#{self.name}",
+      num_of_funcs: funcs.size,
+      funcs: funcs,
+      load: load,
+      reload: reload,
+      upgrade: upgrade,
+      unload: unload,
+      vm_variant: "beam.vanilla",
+      options: LibErlNif::DIRTY_NIF_OPTION
+    )
+    p entry
+
+    pointerof(entry)
+  end
 end
 
-fun nif_init : LibErlNif::EntryT*
-  GC.init
-  # TODO segfaults after this call?
-  # LibCrystalMain.__crystal_main(0, nil)
+module HelloWorld
+  extend ErlNif
 
-  hello_func = func("from_crystal", 0) do |env, argc, argv|
+  @@funcs = [] of LibErlNif::FuncT
+
+  def self.funcs
+    @@funcs
+  end
+
+  func("from_crystal", 0) do |env, argc, argv|
     string = "Hi from Crystal"
     LibErlNif.make_string(env, string, LibErlNif::Nifcharencoding::Latin1)
   end
 
-  echo_func = func("echo", 1) do |env, argc, argv|
+  func("echo", 1) do |env, argc, argv|
     argv[0]
   end
 
-  upcase_func = func("upcase", 1) do |env, argc, argv|
+  func("upcase", 1) do |env, argc, argv|
     input = LibErlNif::Nifbinary.new
     if LibErlNif.inspect_iolist_as_binary(env, argv[0], pointerof(input)) == 0
       LibErlNif.make_badarg(env)
@@ -35,31 +71,8 @@ fun nif_init : LibErlNif::EntryT*
       term
     end
   end
+end
 
-  funcs = [
-    hello_func,
-    echo_func,
-    upcase_func,
-  ]
-
-  load = ->(env : LibErlNif::Nifenv, priv_data : Void**, load_info : LibErlNif::Term) { 0 }
-  reload = ->(env : LibErlNif::Nifenv, priv_data : Void**, load_info : LibErlNif::Term) { 0 }
-  upgrade = ->(env : LibErlNif::Nifenv, priv_data : Void**, old_priv_data : Void**, load_info : LibErlNif::Term) { 0 }
-  unload = ->(env : LibErlNif::Nifenv, priv_data : Void*) {}
-
-  entry = LibErlNif::EntryT.new(
-    major: LibErlNif::MAJOR_VERSION,
-    minor: LibErlNif::MINOR_VERSION,
-    name: "Elixir.HelloWorld",
-    num_of_funcs: funcs.size,
-    funcs: funcs,
-    load: load,
-    reload: reload,
-    upgrade: upgrade,
-    unload: unload,
-    vm_variant: "beam.vanilla",
-    options: LibErlNif::DIRTY_NIF_OPTION
-  )
-
-  pointerof(entry)
+fun nif_init : LibErlNif::EntryT*
+  HelloWorld.nif_init
 end
